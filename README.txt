@@ -1,0 +1,1 @@
+Aplikaciju pokrecete normalno kroz visual studio. Drugu instancu najbolje bi billo da pokrenete u drugom browser-u ili u secret mode-u istog browsera kopiranjem linka na kome je pokrenuta prva instanca.

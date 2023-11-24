@@ -1,0 +1,200 @@
+﻿@page "/"
+@using System.Text;
+@using PlayfairCipher= Chat3.PlayfairCipher
+@implements IAsyncDisposable
+@inject IConfiguration Configuration
+@inject NavigationManager NavigationManager
+@using Microsoft.AspNetCore.Components
+@using Microsoft.AspNetCore.SignalR.Client
+@using ChatHub= Chat3.ChatHub
+@inject IJSRuntime JSRuntime
+
+<PageTitle>Secure Chat</PageTitle>
+
+<div class="box">
+    <h3>ChatApp</h3>
+
+    @if (errorMessage != null)
+    {
+        <p style="color: red;">@errorMessage</p>
+    }
+    @if (!Messages.Any())
+    {
+        <p>No messages received.</p>
+    }
+
+    <form>
+        <label for="username">Username:</label>
+        <br />
+        <input id="username" @bind="userName" name="username" readonly="@noEditing"/>
+        <br />  
+        <label for="message">Message:</label>
+        <br />
+        <textarea id="message" @bind="message" name="message" rows="10" cols="30"></textarea>
+        <br />
+        <button @onclick="SendMessage" @onclick:preventDefault>Send Message</button>
+    </form>
+    <button @onclick="ShowHideEncryptedMessages">@show_encrypted_text</button>
+    <button @onclick="ClearMessages">Clear Messages</button>
+
+    <div class="messages">
+        @if(!show_encrypted)
+        {
+            <h4>Messages</h4>
+           @*  <ul>
+                @foreach (var message in Messages)
+                {
+
+                    <li>@message.Content</li>
+                }
+            </ul> *@
+            <div>
+                @foreach (var message in Messages)
+                {
+                    if (message.Sender == userName)
+                    {
+                        <div class="messageBoxMine">
+                            <strong>@message.Sender:</strong> @message.Content
+                        </div>
+                        continue;
+                    }
+                    else
+                    {
+                        <div class="messageBox">
+                            <strong>@message.Sender:</strong> @message.Content
+                        </div>
+                    }
+                }
+            </div>
+        }
+        @if (show_encrypted)
+        {
+            <h4>Encrypted Messages</h4>
+           @*  <ul>
+                @foreach (var message in Messages)
+                {
+                    <li>@message.EncryptedContent</li>
+                }
+            </ul> *@
+            <div>
+                @foreach (var message in Messages)
+                {
+                    if (message.Sender == userName)
+                    {
+                        <div class="messageBoxMine">
+                            <strong>@message.Sender:</strong> @message.EncryptedContent
+                        </div>
+                        continue;
+                    }
+                    else
+                    {
+                        <div class="messageBox">
+                            <strong>@message.Sender:</strong> @message.EncryptedContent
+                        </div>
+                    }
+                }
+            </div>
+        }
+
+    </div>
+</div>
+
+@code
+{
+    private List<Message> Messages = new List<Message>();
+    private string Key { get; set; }
+
+    public string message { get; set; }
+    public string errorMessage { get; set; }
+    public string userName { get; set; }
+    public bool noEditing = false;
+
+    private static bool show_encrypted = false;
+
+    private string show_encrypted_text = "Show Encrypted Messages";
+
+    private HubConnection hubConnection;
+
+    protected override async Task OnInitializedAsync()
+    {
+        Key = Configuration["key"];
+        hubConnection = new HubConnectionBuilder()
+            .WithUrl(NavigationManager.ToAbsoluteUri("/chathub"))
+            .Build();
+
+
+        hubConnection.On<string, string>("ReceiveMessage", (user, message) =>
+        {
+            string decryptedMessage = message;
+            if (Key.Length != 0)
+            {
+                decryptedMessage = PlayfairCipher.DecryptByPlayfairCipher(message, Key);
+            }
+            Messages.Add(new Message(decryptedMessage,user,message));
+
+            InvokeAsync(StateHasChanged);
+        });
+
+        await hubConnection.StartAsync();
+    }
+
+    private async Task SendMessage()
+    {
+        try
+        {
+            if (string.IsNullOrEmpty(userName))
+            {
+                errorMessage = "Enter a username";
+                return;
+            }
+            if (string.IsNullOrEmpty(message))
+            {
+                errorMessage = "Enter a message";
+                return;
+            }
+            string encryptedMessage = message;
+            if(Key.Length != 0)
+            {
+                Console.WriteLine(Key);
+                encryptedMessage = PlayfairCipher.EncryptByPlayfairCipher(message, Key);
+            }
+            await hubConnection.SendAsync("SendMessage", userName, encryptedMessage);
+            noEditing = true;
+            message = ""; 
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error sending message through SignalR: {ex.Message}");
+            errorMessage = $"Error: {ex.Message}"+Key;
+        }
+    }
+
+    private void ShowHideEncryptedMessages()
+    {
+        show_encrypted = !show_encrypted;
+        show_encrypted_text = show_encrypted ? "Hide Encrypted Messages" : "Show Encrypted Messages";
+        StateHasChanged();
+
+    }
+    public async ValueTask DisposeAsync()
+    {
+        if (hubConnection is not null)
+        {
+            await hubConnection.DisposeAsync();
+        }
+    }
+
+    private async Task ClearMessages()
+    {
+        Console.WriteLine("clear");
+        try
+        {
+            Messages = new();
+            await InvokeAsync(() => StateHasChanged());
+        }
+        catch (Exception e)
+        {
+            errorMessage = $"Error: {e.Message}";
+        }
+    }
+}
