@@ -7,7 +7,6 @@ namespace Chat3
     {
         private static int rounds;
         private static int blockSize;
-
         public static void SetRounds(string r)
         {
             try
@@ -29,7 +28,6 @@ namespace Chat3
             {
                 throw new ArgumentException(b + " is not a valid block size");
             }
-
         }
         static uint[] KeyExpansion(byte[] key)
         {
@@ -190,6 +188,13 @@ namespace Chat3
                 {
                     block[j] ^= previousCipherBlock[j];
                 }
+                if (i != 0)
+                {
+                    for (int j = 0; j < blockSize; j++)
+                    {
+                        block[j] ^= paddedPlaintext[i - blockSize + j];
+                    }
+                }
 
                 byte[] encryptedBlock = EncryptBlock(block, expandedKey);
 
@@ -229,6 +234,14 @@ namespace Chat3
                 Buffer.BlockCopy(ciphertext, i, block, 0, blockSize);
 
                 byte[] decryptedBlock = DecryptBlock(block, expandedKey);
+
+                if (i != 0)
+                {
+                    for (int j = 0; j < blockSize; j++)
+                    {
+                        decryptedBlock[j] ^= decryptedBlock[i - blockSize + j];
+                    }
+                }
 
                 for (int j = 0; j < blockSize; j++)
                 {
