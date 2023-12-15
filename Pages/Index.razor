@@ -36,18 +36,12 @@
     </form>
     <button @onclick="ShowHideEncryptedMessages">@show_encrypted_text</button>
     <button @onclick="ClearMessages">Clear Messages</button>
+    <button @onclick="ChangeEncyption">@show_encryption_type</button>
 
     <div class="messages">
         @if(!show_encrypted)
         {
             <h4>Messages</h4>
-           @*  <ul>
-                @foreach (var message in Messages)
-                {
-
-                    <li>@message.Content</li>
-                }
-            </ul> *@
             <div>
                 @foreach (var message in Messages)
                 {
@@ -70,12 +64,6 @@
         @if (show_encrypted)
         {
             <h4>Encrypted Messages</h4>
-           @*  <ul>
-                @foreach (var message in Messages)
-                {
-                    <li>@message.EncryptedContent</li>
-                }
-            </ul> *@
             <div>
                 @foreach (var message in Messages)
                 {
@@ -102,7 +90,7 @@
 @code
 {
     private List<Message> Messages = new List<Message>();
-    private string Key { get; set; }
+
 
     public string message { get; set; }
     public string errorMessage { get; set; }
@@ -110,14 +98,19 @@
     public bool noEditing = false;
 
     private static bool show_encrypted = false;
+    private static bool playfair_cipher = false;
 
     private string show_encrypted_text = "Show Encrypted Messages";
+    private string show_encryption_type = "Change Encryption Type to PlayfairCipher";
 
     private HubConnection hubConnection;
 
     protected override async Task OnInitializedAsync()
     {
-        Key = Configuration["key"];
+        //Key = Configuration["key"];
+        RC6PCBC.SetRounds(Configuration["rounds"]);
+        RC6PCBC.SetBlockSize(Configuration["blockSize"]);
+
         hubConnection = new HubConnectionBuilder()
             .WithUrl(NavigationManager.ToAbsoluteUri("/chathub"))
             .Build();
@@ -126,10 +119,24 @@
         hubConnection.On<string, string>("ReceiveMessage", (user, message) =>
         {
             string decryptedMessage = message;
-            if (Key.Length != 0)
+
+
+            if (playfair_cipher)
             {
-                decryptedMessage = PlayfairCipher.DecryptByPlayfairCipher(message, Key);
+                if (Configuration["key"] != null && Configuration["key"].Length != 0)
+                {
+                    decryptedMessage = PlayfairCipher.DecryptByPlayfairCipher(message, Configuration["key"]);
+                }
             }
+            else
+            {
+                if (Configuration["keyRC6"] != null && Configuration["iv"]!=null)
+                {
+                    Console.WriteLine(message);
+                    decryptedMessage = RC6PCBC.DecryptbyRC6(message, Configuration["keyRC6"], Configuration["iv"]);
+                }
+            }
+            
             Messages.Add(new Message(decryptedMessage,user,message));
 
             InvokeAsync(StateHasChanged);
@@ -153,10 +160,21 @@
                 return;
             }
             string encryptedMessage = message;
-            if(Key.Length != 0)
+
+
+            if (playfair_cipher)
             {
-                Console.WriteLine(Key);
-                encryptedMessage = PlayfairCipher.EncryptByPlayfairCipher(message, Key);
+                if (Configuration["key"] != null && Configuration["key"].Length != 0)
+                {
+                    encryptedMessage = PlayfairCipher.EncryptByPlayfairCipher(message, Configuration["key"]);
+                }
+            }
+            else
+            {
+                if (Configuration["keyRC6"] != null && Configuration["iv"] != null)
+                {
+                    encryptedMessage = RC6PCBC.EncryptbyRC6(message, Configuration["keyRC6"], Configuration["iv"]);
+                }
             }
             await hubConnection.SendAsync("SendMessage", userName, encryptedMessage);
             noEditing = true;
@@ -165,7 +183,7 @@
         catch (Exception ex)
         {
             Console.WriteLine($"Error sending message through SignalR: {ex.Message}");
-            errorMessage = $"Error: {ex.Message}"+Key;
+            errorMessage = $"Error: {ex.Message}" + Configuration["key"];
         }
     }
 
@@ -190,6 +208,21 @@
         try
         {
             Messages = new();
+            await InvokeAsync(() => StateHasChanged());
+        }
+        catch (Exception e)
+        {
+            errorMessage = $"Error: {e.Message}";
+        }
+    }
+
+    private async Task ChangeEncyption()
+    {
+        playfair_cipher = !playfair_cipher;
+        show_encryption_type = playfair_cipher ? "Change Encryption Type to RC6" : "Change Encryption Type to PlayfairCipher";
+        
+        try
+        {
             await InvokeAsync(() => StateHasChanged());
         }
         catch (Exception e)

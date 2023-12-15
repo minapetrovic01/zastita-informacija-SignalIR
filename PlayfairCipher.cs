@@ -77,7 +77,7 @@ namespace Chat3
 
         static int Mod5(int a)
         {
-            return (a % 5);
+            return (a + 5) % 5;// ovoje izmena u odnosu na proslu fazu
         }
 
         static string Prepare(string str, int ptrs)

@@ -719,11 +719,11 @@
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "C:\\Users\\minap\\ELFAK\\Chat3\\Chat3.csproj",
+      "projectUniqueName": "C:\\Users\\minap\\ELFAK\\zastita\\Chat3\\Chat3.csproj",
       "projectName": "Chat3",
-      "projectPath": "C:\\Users\\minap\\ELFAK\\Chat3\\Chat3.csproj",
+      "projectPath": "C:\\Users\\minap\\ELFAK\\zastita\\Chat3\\Chat3.csproj",
       "packagesPath": "C:\\Users\\minap\\.nuget\\packages\\",
-      "outputPath": "C:\\Users\\minap\\ELFAK\\Chat3\\obj\\",
+      "outputPath": "C:\\Users\\minap\\ELFAK\\zastita\\Chat3\\obj\\",
       "projectStyle": "PackageReference",
       "configFilePaths": [
         "C:\\Users\\minap\\AppData\\Roaming\\NuGet\\NuGet.Config",

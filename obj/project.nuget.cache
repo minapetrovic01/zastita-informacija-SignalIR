@@ -1,8 +1,8 @@
 {
   "version": 2,
-  "dgSpecHash": "IPVksNa93Iu+ulcK2qBvbL2HglGoB7cxMacFlifchLhbHp2+8PZef33iBdZyFogyGU3Z3VGHNS49jQCn7mRf2Q==",
+  "dgSpecHash": "rGim6N4NRBPq2+h/hYzt+cb1l9U5Qea7/119lVE9UxhKGgY0oCmWCwBiyn3HyuJCLfvlBm2UAoDis3tyiB0RPA==",
   "success": true,
-  "projectFilePath": "C:\\Users\\minap\\ELFAK\\Chat3\\Chat3.csproj",
+  "projectFilePath": "C:\\Users\\minap\\ELFAK\\zastita\\Chat3\\Chat3.csproj",
   "expectedPackageFiles": [
     "C:\\Users\\minap\\.nuget\\packages\\microsoft.aspnetcore.connections.abstractions\\7.0.5\\microsoft.aspnetcore.connections.abstractions.7.0.5.nupkg.sha512",
     "C:\\Users\\minap\\.nuget\\packages\\microsoft.aspnetcore.http.connections.client\\7.0.5\\microsoft.aspnetcore.http.connections.client.7.0.5.nupkg.sha512",
